@@ -45,6 +45,7 @@ compile_mesa() {
         wfm)            plist="0001" ;;
         wfm-nogenclear) plist="0001 0002" ;;
         wfm-novpcattr)  plist="0001 0003" ;;
+        wfm-a732)       plist="0001 0004" ;;
         *) echo "Unknown VARIANT=$variant"; exit 1 ;;
     esac
     for p in $plist; do
