@@ -3,8 +3,11 @@ set -o pipefail
 
 deps="ninja patchelf unzip curl pip flex bison zip git perl glslangValidator python3"
 workdir="$(pwd)/turnip_workdir"
+repo_root="$(pwd)"
 ndkver="android-ndk-r28"
 target_sdk="35"
+mesa_ref="${MESA_REF:-26.1}"
+variant="${VARIANT:-wfm}"
 
 check_deps(){
 	for dep in $deps; do
@@ -24,17 +27,30 @@ prepare_ndk(){
 
 compile_mesa() {
     local repo_url="https://gitlab.freedesktop.org/mesa/mesa.git"
-    local branch="main"
-    local build_name="Turnip-Main-Clean-SDK35"
-    local output_tag="V97-Main-SDK35"
+    local branch="$mesa_ref"
+    local build_name="Turnip-Unleashed-$variant"
+    local output_tag="unleashed-$variant"
 
-    echo "Cloning Mesa Main..."
-    
+    echo "Cloning Mesa ($branch)..."
+
     cd "$workdir"
     rm -rf mesa
-    
+
     git clone --depth 100 -b "$branch" "$repo_url" mesa
     cd mesa
+    echo "Mesa commit: $(git rev-parse HEAD) ($(cat VERSION))"
+
+    local plist=""
+    case "$variant" in
+        wfm)            plist="0001" ;;
+        wfm-nogenclear) plist="0001 0002" ;;
+        wfm-novpcattr)  plist="0001 0003" ;;
+        *) echo "Unknown VARIANT=$variant"; exit 1 ;;
+    esac
+    for p in $plist; do
+        echo "Applying patch ${p}..."
+        patch -p1 -N --fuzz=3 < "$repo_root"/patches-unleashed/${p}-*.patch
+    done
 
     mkdir -p subprojects && cd subprojects
     rm -rf spirv-tools spirv-headers

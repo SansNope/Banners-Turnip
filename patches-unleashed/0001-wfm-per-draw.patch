@@ -1,0 +1,28 @@
+--- a/src/freedreno/vulkan/tu_cmd_buffer.cc	2026-07-02 18:10:47.377731900 +0500
++++ b/src/freedreno/vulkan/tu_cmd_buffer.cc	2026-07-02 18:10:47.378237600 +0500
+@@ -311,6 +311,11 @@
+    BITMASK_ENUM(tu_cmd_flush_bits) flushes = cache->flush_bits;
+    cache->flush_bits = 0;
+ 
++   /* UnleashedRecomp: always sync CP front-end with ME around flushes; fixes
++    * per-draw geometry/texture shimmer on A725 (found by mask bisection).
++    */
++   flushes |= TU_CMD_FLAG_WAIT_FOR_ME;
++
+    if (TU_DEBUG(FLUSHALL))
+       flushes |= TU_CMD_FLAG_ALL_CLEAN | TU_CMD_FLAG_ALL_INVALIDATE;
+ 
+@@ -512,10 +517,9 @@
+ void
+ tu_emit_cache_flush_renderpass(struct tu_cmd_buffer *cmd_buffer)
+ {
+-   if (!cmd_buffer->state.renderpass_cache.flush_bits &&
+-       likely(!tu_env.debug))
+-      return;
+-
++   /* UnleashedRecomp: no early-out - tu6_emit_flushes() must run per draw so
++    * the unconditional WAIT_FOR_ME above lands between draws.
++    */
+    struct tu_cs *cs = &cmd_buffer->draw_cs;
+    struct tu_cache_state *cache = &cmd_buffer->state.renderpass_cache;
+ 
