@@ -13,6 +13,8 @@ on:
           - wfm-nogenclear
           - wfm-novpcattr
           - wfm-a732
+          - wfm-smart1
+          - wfm-smart2
       mesa_ref:
         description: 'Mesa branch or tag'
         required: false
