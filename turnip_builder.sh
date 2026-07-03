@@ -36,12 +36,23 @@ compile_mesa() {
     cd "$workdir"
     rm -rf mesa
 
-    git clone --depth 100 -b "$branch" "$repo_url" mesa
-    cd mesa
+    if [[ "$branch" =~ ^[0-9a-f]{7,40}$ ]]; then
+        # MESA_REF is an exact commit SHA. A blobless partial clone pulls the full commit
+        # graph cheaply (blobs on demand at checkout), so any main commit is reachable -
+        # unlike "-b <sha>" which git rejects, or a shallow clone that may not include it.
+        echo "Fetching Mesa at commit $branch (blobless partial clone)..."
+        git clone --filter=blob:none "$repo_url" mesa
+        cd mesa
+        git checkout --detach "$branch"
+    else
+        git clone --depth 100 -b "$branch" "$repo_url" mesa
+        cd mesa
+    fi
     echo "Mesa commit: $(git rev-parse HEAD) ($(cat VERSION))"
 
     local plist=""
     case "$variant" in
+        clean)          plist="" ;;  # pristine upstream, no patches (for Mesa-maintainer repro)
         wfm)            plist="0001" ;;
         wfm-nogenclear) plist="0001 0002" ;;
         wfm-novpcattr)  plist="0001 0003" ;;

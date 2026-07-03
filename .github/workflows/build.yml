@@ -9,6 +9,7 @@ on:
         default: 'wfm'
         type: choice
         options:
+          - clean
           - wfm
           - wfm-nogenclear
           - wfm-novpcattr
