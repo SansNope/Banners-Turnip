@@ -1,0 +1,37 @@
+--- a/src/freedreno/vulkan/tu_cmd_buffer.cc	2026-07-03 05:21:49.961713200 +0500
++++ b/src/freedreno/vulkan/tu_cmd_buffer.cc	2026-07-03 05:21:49.963217200 +0500
+@@ -311,6 +311,12 @@
+    BITMASK_ENUM(tu_cmd_flush_bits) flushes = cache->flush_bits;
+    cache->flush_bits = 0;
+ 
++   /* UnleashedRecomp: piggyback a CP_WAIT_FOR_ME on every flush emission
++    * (barriers, renderpass boundaries). The per-draw early-out is preserved,
++    * so this costs nothing on clean consecutive draws.
++    */
++   flushes |= TU_CMD_FLAG_WAIT_FOR_ME;
++
+    if (TU_DEBUG(FLUSHALL))
+       flushes |= TU_CMD_FLAG_ALL_CLEAN | TU_CMD_FLAG_ALL_INVALIDATE;
+ 
+@@ -4538,6 +4544,10 @@
+       cmd->state.index_va = vk_buffer_address(&buf->vk, offset);
+       cmd->state.max_index_count = size >> index_shift;
+       cmd->state.index_size = index_size;
++      /* UnleashedRecomp: index buffer rebinds don't set dirty bits, but the
++       * following draw reads index_va - make it wait for ME too.
++       */
++      cmd->state.renderpass_cache.flush_bits |= TU_CMD_FLAG_WAIT_FOR_ME;
+    } else {
+       cmd->state.index_va = 0;
+       cmd->state.max_index_count = 0;
+@@ -8124,6 +8134,10 @@
+    if (!BITSET_IS_EMPTY(cmd->vk.dynamic_graphics_state.dirty) ||
+        (cmd->state.dirty & ~TU_CMD_DIRTY_COMPUTE_DESC_SETS)) {
+       dynamic_draw_state_dirty = tu_emit_draw_state<CHIP>(cmd);
++      /* UnleashedRecomp: sync CP front-end with ME only for draws that emit
++       * new state - cheap placement of the A725 per-draw shimmer fix.
++       */
++      cmd->state.renderpass_cache.flush_bits |= TU_CMD_FLAG_WAIT_FOR_ME;
+    }
+ 
+    /* Primitive restart value works in non-indexed draws, we have to disable

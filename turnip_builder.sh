@@ -48,6 +48,7 @@ compile_mesa() {
         wfm-a732)       plist="0001 0004" ;;
         wfm-smart1)     plist="0005" ;;
         wfm-smart2)     plist="0006" ;;
+        wfm-smart3)     plist="0007" ;;
         *) echo "Unknown VARIANT=$variant"; exit 1 ;;
     esac
     for p in $plist; do

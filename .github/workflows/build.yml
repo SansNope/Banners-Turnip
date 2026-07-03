@@ -15,6 +15,7 @@ on:
           - wfm-a732
           - wfm-smart1
           - wfm-smart2
+          - wfm-smart3
       mesa_ref:
         description: 'Mesa branch or tag'
         required: false
