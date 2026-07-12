@@ -1,0 +1,56 @@
+name: NewDriver wb RP-PAIR (Linux)
+
+# Same pin as Windows product: whitebelyash 7fdde2 + barrier-scoped CLEAN|WFM
+# A/B vs Turnip-NewDriver-wb-26.2-RENDERPASS-CLEAN-WFM-PAIR.zip
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "build_newdriver_rp_pair.sh"
+      - "patches/0010-renderpass-clean-wfm-pair.patch"
+      - ".github/workflows/newdriver_rp_pair.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            ninja-build patchelf unzip flex bison git perl \
+            python3 python3-pip python3-setuptools python3-mako \
+            glslang-tools ccache zip curl ca-certificates pkg-config
+          pip3 install --break-system-packages 'meson>=1.3' mako
+
+      - name: Build whitebelyash + RP-PAIR
+        env:
+          SKIP_APT: "1"
+          MESA_REF: 7fdde2f8f865dddc7dd709c8c184fd5fad014f63
+          MESA_REPO: https://github.com/whitebelyash/mesa-unified.git
+          NDK_VERSION: android-ndk-r29
+          API_LEVEL: "34"
+          PLATFORM_SDK: "36"
+          WORKDIR: ${{ github.workspace }}/workdir
+        run: |
+          chmod +x build_newdriver_rp_pair.sh
+          ./build_newdriver_rp_pair.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Turnip-NewDriver-wb-26.2-RP-PAIR-LINUX
+          path: |
+            workdir/Turnip-NewDriver-wb-26.2-RP-PAIR-LINUX.zip
+            workdir/vulkan.newdriver_wb_rp_pair_linux.so
+            workdir/package/meta.json
+          if-no-files-found: error
+          retention-days: 30

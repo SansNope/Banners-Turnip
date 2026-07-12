@@ -1,0 +1,19 @@
+diff --git a/src/freedreno/vulkan/tu_cmd_buffer.cc b/src/freedreno/vulkan/tu_cmd_buffer.cc
+index f7d14a67f9a..bef4766dba5 100644
+--- a/src/freedreno/vulkan/tu_cmd_buffer.cc
++++ b/src/freedreno/vulkan/tu_cmd_buffer.cc
+@@ -579,6 +579,14 @@ tu_emit_cache_flush_renderpass(struct tu_cmd_buffer *cmd_buffer)
+        likely(!tu_env.debug))
+       return;
+ 
++   /* Adreno 725: cache writeback must complete before the draw after an
++    * in-render-pass dependency. Scoped only to dependencies Turnip already
++    * decided need a flush (BARRIER path). Confirmed by cache bisect:
++    * CACHE_CLEAN + WAIT_FOR_ME; not per-draw unconditional WFM.
++    */
++   cmd_buffer->state.renderpass_cache.flush_bits |=
++      TU_CMD_FLAG_CACHE_CLEAN | TU_CMD_FLAG_WAIT_FOR_ME;
++
+    struct tu_cs *cs = &cmd_buffer->draw_cs;
+    struct tu_cache_state *cache = &cmd_buffer->state.renderpass_cache;
+ 
