@@ -44,13 +44,12 @@ jobs:
           chmod +x build_newdriver_rp_pair.sh
           ./build_newdriver_rp_pair.sh
 
-      - name: Upload artifact
+      - name: Upload flat import zip only
         uses: actions/upload-artifact@v4
         with:
+          # Single zip = libvulkan_freedreno.so + meta.json (no nested wrappers).
+          # Import THIS file in the app. Log must show size ~15.1MB, not 18885400.
           name: Turnip-NewDriver-wb-26.2-RP-PAIR-LINUX
-          path: |
-            workdir/Turnip-NewDriver-wb-26.2-RP-PAIR-LINUX.zip
-            workdir/vulkan.newdriver_wb_rp_pair_linux.so
-            workdir/package/meta.json
+          path: workdir/Turnip-NewDriver-wb-26.2-RP-PAIR-LINUX.zip
           if-no-files-found: error
           retention-days: 30
